@@ -17,7 +17,7 @@ def searchRawTransactions(address):
         "method": "searchrawtransactions",
         "params": [address],
         "jsonrpc": "1.0",
-        "id": 0,
+        "id": "zappa-explorer",
     }
     response = requests.post(nodeURL, data=json.dumps(payload), headers=headers).json()
     return jsonify(response), 200
@@ -30,7 +30,27 @@ def getAddressBalance(address):
         "method": "getaddressbalance",
         "params": [ json.dumps({"addresses": [address]}) ],
         "jsonrpc": "1.0",
-        "id": 0,
+        "id": "zappa-explorer",
+    }
+    response = requests.post(nodeURL, data=json.dumps(payload), headers=headers).json()
+    return jsonify(response), 200
+
+
+@app.route('/api/rpc/getbestblock/')
+def getBestBlock():
+    headers = {'content-type': 'application/json'}
+    payload = {
+        "method": "getbestblockhash",
+        "params": [],
+        "jsonrpc": "1.0",
+        "id": "zappa-explorer",
+    }
+    blockHash = requests.post(nodeURL, data=json.dumps(payload), headers=headers).json()["result"]
+    payload = {
+        "method": "getblock",
+        "params": [ blockHash ],
+        "jsonrpc": "1.0",
+        "id": "zappa-explorer",
     }
     response = requests.post(nodeURL, data=json.dumps(payload), headers=headers).json()
     return jsonify(response), 200
