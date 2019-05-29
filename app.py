@@ -43,22 +43,20 @@ def getBestBlock():
         response = requestJsonRPC("getblock", [blockHash, 2])
         return jsonify(response), 200
 
-@app.route('/api/rpc/getblockbyheight/<height>')
-def getBlockByHeight(height):
+@app.route('/api/rpc/getblock/<heightOrAddress>')
+def getBlock(heightOrAddress):
     try:
-        heightInteger = int(height)
+        height = int(heightOrAddress)
+        isHeight = True
     except:
-        heightInteger = height
-    response = requestJsonRPC("getblockhash", [heightInteger])
-    if "error" in response and response["error"] != None:
-        return jsonify(response), 200
-    else:
-        blockHash = response["result"]
-        response = requestJsonRPC("getblock", [blockHash, 2])
-        return jsonify(response), 200
-
-@app.route('/api/rpc/getblockbyhash/<blockHash>')
-def getBlockByHash(blockHash):
+        blockHash = heightOrAddress
+        isHeight = False
+    if isHeight:
+        response = requestJsonRPC("getblockhash", [height])
+        if "error" in response and response["error"] != None:
+            return jsonify(response), 200
+        else:
+            blockHash = response["result"]
     response = requestJsonRPC("getblock", [blockHash, 2])
     return jsonify(response), 200
 
@@ -78,6 +76,14 @@ def getBlockchainInfo():
 @app.route("/")
 def home():
     return render_template("home.html")
+
+@app.route("/block/<heightOrAddress>")
+def block(heightOrAddress):
+    return render_template("block.html", **locals())
+
+@app.route("/transaction/<txid>")
+def transaction(txid):
+    return render_template("transaction.html", **locals())
 
 # include this for local dev
 if __name__ == '__main__':

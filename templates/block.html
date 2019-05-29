@@ -1,0 +1,28 @@
+{% extends "template.html" %}
+{% block content %}
+<div id="block-data"></div>
+<script>
+$(document).ready(function () {
+  $.getJSON('/api/rpc/getblock/{{heightOrAddress}}', function (data) {
+    console.log(data);
+    var transformHeader =
+      {'<>':'div','html':[
+        {'<>':'div','html':'hash: ${hash}</a>'},
+        {'<>':'div','html':'previous block: <a href="/block/${previousblockhash}">${previousblockhash}</a>'},
+        {'<>':'div','html':'height: ${height}'},
+        {'<>':'div','html':'difficulty: ${difficulty}'},
+        {'<>':'div','html':'transactions:'},
+        {'<>':'div','id':'tx-data','html':''} ] };
+
+    $('#block-data').json2html(data["result"], transformHeader);
+
+    var transformTx =
+      {'<>':'div','html':[
+        {'<>':'div','html':'<a href="/transaction/${hash}">${hash}</a>'}] };
+
+    $('#tx-data').json2html(data["result"]["tx"], transformTx);
+
+  });
+});
+</script>
+{% endblock %}
