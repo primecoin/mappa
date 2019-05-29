@@ -1,6 +1,6 @@
 # app.py
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 
 import json
 import requests
@@ -21,9 +21,11 @@ def requestJsonRPC(method, params):
     return requests.post(nodeURL, data=json.dumps(payload), headers=headers).json()
 
 
+# API based on node JSON-RPC
+
 @app.route('/api/rpc/searchrawtransactions/<address>')
 def searchRawTransactions(address):
-    response = requestJsonRPC("searchrawtransactions", [ address])
+    response = requestJsonRPC("searchrawtransactions", [address])
     return jsonify(response), 200
 
 @app.route('/api/rpc/getaddressbalance/<address>')
@@ -47,7 +49,7 @@ def getBlockByHeight(height):
         heightInteger = int(height)
     except:
         heightInteger = height
-    response = requestJsonRPC("getblockhash", [ heightInteger ])
+    response = requestJsonRPC("getblockhash", [heightInteger])
     if "error" in response and response["error"] != None:
         return jsonify(response), 200
     else:
@@ -57,13 +59,25 @@ def getBlockByHeight(height):
 
 @app.route('/api/rpc/getblockbyhash/<blockHash>')
 def getBlockByHash(blockHash):
-    response = requestJsonRPC("getblock", [ blockHash, 2])
+    response = requestJsonRPC("getblock", [blockHash, 2])
     return jsonify(response), 200
 
 @app.route('/api/rpc/getrawtransaction/<txid>')
 def getRawTransaction(txid):
     response = requestJsonRPC("getrawtransaction", [txid, True])
     return jsonify(response), 200
+
+@app.route('/api/rpc/getblockchaininfo/')
+def getBlockchainInfo():
+    response = requestJsonRPC("getblockchaininfo", [])
+    return jsonify(response), 200
+
+
+# Web Pages
+
+@app.route("/")
+def home():
+    return render_template("home.html")
 
 # include this for local dev
 if __name__ == '__main__':

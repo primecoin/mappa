@@ -1,0 +1,18 @@
+{% extends "template.html" %}
+{% block content %}
+<div id="show-data"></div>
+<script>
+$(document).ready(function () {
+  $.getJSON('/api/rpc/getblockchaininfo/', function (data) {
+    console.log(data);
+    var transform =
+      {'<>':'div','html':[
+	      {'<>':'div','html':'block: <a href="block/${bestblockhash}">${bestblockhash}</a>'},
+        {'<>':'div','html':'height: ${blocks}'},
+        {'<>':'div','html':'difficulty: ${difficulty}'} ] };
+
+    $('#show-data').json2html(data["result"], transform);
+  });
+});
+</script>
+{% endblock %}
