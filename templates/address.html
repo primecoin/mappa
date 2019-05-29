@@ -1,0 +1,31 @@
+{% extends "template.html" %}
+{% block content %}
+<div id="address-data"></div>
+<div id="tx-data"></div>
+<script>
+$(document).ready(function () {
+  $.getJSON('/api/rpc/getaddressbalance/{{address}}', function (data) {
+    console.log(data);
+    var transformBalance =
+      {'<>':'div','html':[
+        {'<>':'div','html':'address: {{address}}</a>'},
+	      {'<>':'div','html':'balance: Ψ<span id="balance-data">${balance}</span>'},
+        {'<>':'div','html':'transactions:'} ] };
+
+    $('#address-data').json2html(data["result"], transformBalance);
+    // format balance field
+    $('#balance-data').text(parseFloat($('#balance-data').text() / 100000000.0));
+  });
+
+  $.getJSON('/api/rpc/searchrawtransactions/{{address}}', function (data) {
+    console.log(data);
+    var transformTx =
+      {'<>':'div','html':[
+        {'<>':'div','html':'<a href="/transaction/${hash}">${hash}</a>'}] };
+
+    $('#tx-data').json2html(data["result"], transformTx);
+
+  });
+});
+</script>
+{% endblock %}

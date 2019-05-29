@@ -85,6 +85,10 @@ def block(heightOrAddress):
 def transaction(txid):
     return render_template("transaction.html", **locals())
 
+@app.route("/address/<address>")
+def address(address):
+    return render_template("address.html", **locals())
+
 # include this for local dev
 if __name__ == '__main__':
     app.run()
