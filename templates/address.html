@@ -23,7 +23,7 @@ $(document).ready(function () {
       {'<>':'div','html':[
         {'<>':'div','html':'<a href="/transaction/${hash}">${hash}</a>'}] };
 
-    $('#tx-data').json2html(data["result"], transformTx);
+    $('#tx-data').json2html(data["result"].reverse(), transformTx);
 
   });
 });
