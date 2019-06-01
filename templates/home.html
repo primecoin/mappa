@@ -1,6 +1,8 @@
 {% extends "template.html" %}
 {% block content %}
-<div id="show-data"></div>
+<div>server node: rpc16.primecoin.org</div>
+<div id="blockchain-data"></div>
+<div id="peer-data"></div>
 <script>
 $(document).ready(function () {
   $.getJSON('/api/rpc/getblockchaininfo/', function (data) {
@@ -9,10 +11,21 @@ $(document).ready(function () {
       {'<>':'div','html':[
         {'<>':'div','html':'block: <a href="/block/${bestblockhash}">${bestblockhash}</a>'},
         {'<>':'div','html':'height: ${blocks}'},
-        {'<>':'div','html':'difficulty: ${difficulty}'} ] };
+        {'<>':'div','html':'difficulty: ${difficulty}'},
+        {'<>':'div','html':'connected peers:'} ] };
 
-    $('#show-data').json2html(data["result"], transform);
+    $('#blockchain-data').json2html(data["result"], transform);
   });
+
+  $.getJSON('/api/rpc/getpeerinfo/', function (data) {
+    console.log(data);
+    var transform =
+      {'<>':'div','html':[
+        {'<>':'div','html':'peer @${synced_blocks} version ${version}${subver}</a>'} ] };
+
+    $('#peer-data').json2html(data["result"], transform);
+  });
+
 });
 </script>
 {% endblock %}

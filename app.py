@@ -70,6 +70,11 @@ def getBlockchainInfo():
     response = requestJsonRPC("getblockchaininfo", [])
     return jsonify(response), 200
 
+@app.route('/api/rpc/getpeerinfo/')
+def getPeerInfo():
+    response = requestJsonRPC("getpeerinfo", [])
+    return jsonify(response), 200
+
 
 # Web Pages
 
