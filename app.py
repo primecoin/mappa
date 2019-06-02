@@ -5,10 +5,10 @@ from flask import Flask, jsonify, render_template
 import json
 import requests
 
-app = Flask(__name__)
+app = Flask(__name__, instance_relative_config=True)
+app.config.from_object('config')
+app.config.from_pyfile('config.py')
 
-# Node URL for JSON-RPC queries
-nodeURL = "http://xpm:ZGkadYaDMKVyIQcVVw8D87njCJntSmRddM3FdmVcI6A=@rpc16.primecoin.org:9912"
 
 def requestJsonRPC(method, params):
     headers = {'content-type': 'application/json'}
@@ -18,7 +18,8 @@ def requestJsonRPC(method, params):
         "jsonrpc": "1.0",
         "id": "zappa-explorer",
     }
-    return requests.post(nodeURL, data=json.dumps(payload), headers=headers).json()
+    url = app.config['MAINNET_RPC_URL'] if app.config['NETWORK'] != 'testnet' else app.config['TESTNET_RPC_URL']
+    return requests.post(url, data=json.dumps(payload), headers=headers).json()
 
 
 # API based on node JSON-RPC
