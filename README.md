@@ -2,9 +2,19 @@
 
 A minimalist explorer for Primecoin.
 
+### Installation
+
+
+```
+git clone ssh://git@github.com/primecoin/mappa
+cd mappa
+pipenv shell
+pipenv install zappa flask
+```
+
 ### Configurations
 
-Configure the flask app by setting config.py and instance/config.py:
+Configure the flask app via configuration files `config.py` and `instance/config.py`:
 
 ```
 # config.py
@@ -35,4 +45,27 @@ Test locally:
 
 ```
 flask run
+```
+
+By default the test server is located at `http://localhost:5000/`.
+
+### Deployment
+
+Amazon AWS deployment requires awscli.
+
+```
+zappa init
+```
+
+Add `certificate_arn` and `domain` settings to `zappa_settings.json`. To deploy the web service:
+
+```
+zappa deploy
+zappa certify dev
+```
+
+To terminate the web service:
+
+```
+zappa undeploy
 ```
