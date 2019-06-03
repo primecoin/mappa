@@ -7,9 +7,17 @@
     <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/json2html/1.2.0/json2html.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.json2html/1.2.0/jquery.json2html.min.js"></script>
+    <style>
+      .error {
+        color:red;
+      }
+    </style>
   </head>
   <body>
+    <div id="error" class="error"></div>
+    <pre>
 {% block content %}
 {% endblock %}
+    </pre>
   </body>
 </html>
