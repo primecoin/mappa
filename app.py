@@ -34,7 +34,7 @@ def requestJsonRPC(method, params):
 
 @app.route('/api/rpc/searchrawtransactions/<address>')
 def searchRawTransactions(address):
-    response = requestJsonRPC("searchrawtransactions", [address])
+    response = requestJsonRPC("searchrawtransactions", [address, 1, 0, 1000])
     return jsonify(response), 200
 
 @app.route('/api/rpc/getaddressbalance/<address>')

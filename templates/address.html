@@ -1,5 +1,6 @@
 {% extends "template.html" %}
 {% block content %}
+<div id="error"></div>
 <div id="address-data"></div>
 <div id="tx-data"></div>
 <script>
@@ -23,6 +24,14 @@ $(document).ready(function () {
       {'<>':'div','html':[
         {'<>':'div','html':'<a href="/transaction/${hash}">${hash}</a>'}] };
 
+    if (data["result"].length >= 1000) {
+      $('#error').text("Warning: Address has over 1000 transactions. Only partial list is shown from the oldest. Primer only supports address with no more than 1000 transactions. Consider moving coins to new address.");
+      $('#error').css("color", "red");
+    }
+    else if (data["result"].length >= 500) {
+      $('#error').text("Warning: Too many transactions. Primer only supports address with no more than 1000 transactions. Consider moving coins to new address.");
+      $('#error').css("color", "red");
+    }
     $('#tx-data').json2html(data["result"].reverse(), transformTx);
 
   });
