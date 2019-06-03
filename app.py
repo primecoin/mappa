@@ -24,7 +24,7 @@ def requestJsonRPC(method, params):
         "method": method,
         "params": params,
         "jsonrpc": "1.0",
-        "id": "zappa-explorer",
+        "id": "mappa",
     }
     url = app.config['MAINNET_RPC_URL'] if app.config['NETWORK'] == 'mainnet' else app.config['TESTNET_RPC_URL']
     return requests.post(url, data=json.dumps(payload), headers=headers).json()

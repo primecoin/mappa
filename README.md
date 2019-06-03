@@ -1,6 +1,6 @@
-# Zappa Explorer
+# Mappa
 
-Zappa Explorer is a minimalist explorer for Primecoin.
+A minimalist explorer for Primecoin.
 
 ### Configurations
 
