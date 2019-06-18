@@ -1,10 +1,25 @@
 {% extends "template.html" %}
 {% block content %}
-<div>server node: rpc16.primecoin.org</div>
+<div>consensus estimate:</div>
+<div id="blockchain-consensus"></div>
+<div>production server node: rpc8.primecoin.org</div>
 <div id="blockchain-data"></div>
+<div>development server node: rpc16.primecoin.org</div>
+<div id="blockchain-data-dev"></div>
 <div id="peer-data"></div>
 <script>
 $(document).ready(function () {
+  $.getJSON('/api/rpc8/getbestblock/', function (data) {
+    console.log(data);
+    var transform =
+      {'<>':'div','html':[
+        {'<>':'div','html':'block: <a href="/block/${hash}">${hash}</a>'},
+        {'<>':'div','html':'height: ${height}'},
+        {'<>':'div','html':'difficulty: ${difficulty}'} ] };
+
+    $('#blockchain-data').json2html(data["result"], transform);
+  });
+
   $.getJSON('/api/rpc/getblockchaininfo/', function (data) {
     console.log(data);
     var transform =
@@ -14,7 +29,18 @@ $(document).ready(function () {
         {'<>':'div','html':'difficulty: ${difficulty}'},
         {'<>':'div','html':'connected peers:'} ] };
 
-    $('#blockchain-data').json2html(data["result"], transform);
+    $('#blockchain-data-dev').json2html(data["result"], transform);
+  });
+
+  $.getJSON('/api/consensus/', function (data) {
+    console.log(data);
+    var transform =
+      {'<>':'div','html':[
+        {'<>':'div','html':'block: <a href="/block/${hash}">${hash}</a>'},
+        {'<>':'div','html':'height: ${height}'},
+        {'<>':'div','html':'difficulty: ${difficulty}'} ] };
+
+    $('#blockchain-consensus').json2html(data["result"], transform);
   });
 
   $.getJSON('/api/rpc/getpeerinfo/', function (data) {

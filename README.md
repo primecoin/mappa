@@ -39,6 +39,8 @@ NETWORK = "mainnet"
 
 MAINNET_RPC_URL = "http://<rpcuser>:<rpcpassword>@<nodedomain>:9912"
 TESTNET_RPC_URL = "http://<rpcuser>:<rpcpassword>@<nodedomain>:9914"
+MAINNET_RPC8_URL = "http://<rpcuser>:<rpcpassword>@<nodedomain>:9912"
+TESTNET_RPC8_URL = "http://<rpcuser>:<rpcpassword>@<nodedomain>:9914"
 ```
 
 Test locally:
