@@ -9,7 +9,7 @@
 <div id="peer-data"></div>
 <script>
 $(document).ready(function () {
-  $.getJSON('/api/rpc8/getbestblock/', function (data) {
+  $.getJSON('/api/getbestblock8/', function (data) {
     console.log(data);
     var transform =
       {'<>':'div','html':[
@@ -20,7 +20,7 @@ $(document).ready(function () {
     $('#blockchain-data').json2html(data["result"], transform);
   });
 
-  $.getJSON('/api/rpc/getblockchaininfo/', function (data) {
+  $.getJSON('/api/getblockchaininfo/', function (data) {
     console.log(data);
     var transform =
       {'<>':'div','html':[
@@ -43,7 +43,7 @@ $(document).ready(function () {
     $('#blockchain-consensus').json2html(data["result"], transform);
   });
 
-  $.getJSON('/api/rpc/getpeerinfo/', function (data) {
+  $.getJSON('/api/getpeerinfo/', function (data) {
     console.log(data);
     var transform =
       {'<>':'div','html':[

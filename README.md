@@ -9,7 +9,8 @@ A minimalist explorer for Primecoin.
 git clone ssh://git@github.com/primecoin/mappa
 cd mappa
 pipenv shell
-pipenv install zappa flask
+pipenv install zappa flask Flask-JSONRPC
+pipenv install --dev awscli
 ```
 
 ### Configurations

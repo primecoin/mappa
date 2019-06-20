@@ -1,6 +1,7 @@
 # app.py
 
 from flask import Flask, jsonify, render_template
+from flask_jsonrpc import JSONRPC
 
 import json
 import requests
@@ -18,6 +19,8 @@ if app.config['NETWORK'] == 'mainnet' and 'MAINNET_RPC8_URL' not in app.config:
     raise RuntimeError("Setting 'MAINNET_RPC8_URL' is not configured")
 if app.config['NETWORK'] == 'testnet' and 'TESTNET_RPC_URL' not in app.config:
     raise RuntimeError("Setting 'TESTNET_RPC_URL' is not configured")
+
+jsonrpc = JSONRPC(app, '/jsonrpc/')
 
 
 def requestJsonRPC(method, params, useProductionNode = False):
@@ -72,47 +75,64 @@ def checkConsensus(height):
         return False
     return response["result"]["hash"] == response8["result"]["hash"]
 
+
+# JSON-RPC pass through to node
+
+@jsonrpc.method('getwork(data=str)')
+def getWork(data = None):
+    response = requestJsonRPC("getwork", [] if data == None else [data], useProductionNode = True)
+    if "error" in response and response["error"] != None:
+        raise ValueError(response["error"])
+    else:
+        return response["result"]
+
+
 # API based on node JSON-RPC
 
-@app.route('/api/rpc/searchrawtransactions/<address>')
+@app.route('/api/searchrawtransactions/<address>')
 def searchRawTransactions(address):
     response = requestJsonRPC("searchrawtransactions", [address, 1, 0, 1000])
     return jsonify(response), 200
 
-@app.route('/api/rpc/getaddressbalance/<address>')
+@app.route('/api/getaddressbalance/<address>')
 def getAddressBalance(address):
     response = requestJsonRPC("getaddressbalance", [ json.dumps({"addresses": [address]}) ] )
     return jsonify(response), 200
 
-@app.route('/api/rpc/getbestblock/')
+@app.route('/api/getbestblock/')
 def getBestBlock():
     return jsonify(requestBestBlock()), 200
 
-@app.route('/api/rpc/getblock/<heightOrAddress>')
+@app.route('/api/getblock/<heightOrAddress>')
 def getBlock(heightOrAddress):
     return jsonify(requestBlock(heightOrAddress)), 200
 
-@app.route('/api/rpc/getrawtransaction/<txid>')
+@app.route('/api/getrawtransaction/<txid>')
 def getRawTransaction(txid):
     response = requestJsonRPC("getrawtransaction", [txid, True])
     return jsonify(response), 200
 
-@app.route('/api/rpc/getblockchaininfo/')
+@app.route('/api/getblockchaininfo/')
 def getBlockchainInfo():
     response = requestJsonRPC("getblockchaininfo", [])
     return jsonify(response), 200
 
-@app.route('/api/rpc/getpeerinfo/')
+@app.route('/api/getpeerinfo/')
 def getPeerInfo():
     response = requestJsonRPC("getpeerinfo", [])
     return jsonify(response), 200
 
-@app.route('/api/rpc8/getinfo/')
+@app.route('/api/getinfo/')
 def getBlockchainInfo8():
     response = requestJsonRPC("getinfo", [], useProductionNode = True)
     return jsonify(response), 200
 
-@app.route('/api/rpc8/getbestblock/')
+@app.route('/api/getwork/')
+def getMinerWork8():
+    response = requestJsonRPC("getwork", [], useProductionNode = True)
+    return jsonify(response), 200
+
+@app.route('/api/getbestblock8/')
 def getBestBlock8():
     return jsonify(requestBestBlock(useProductionNode = True)), 200
 

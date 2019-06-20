@@ -3,7 +3,7 @@
 <div id="tx-data"></div>
 <script>
 $(document).ready(function () {
-  $.getJSON('/api/rpc/getrawtransaction/{{txid}}', function (data) {
+  $.getJSON('/api/getrawtransaction/{{txid}}', function (data) {
     console.log(data);
     var transformTx =
       {'<>':'div','html':[

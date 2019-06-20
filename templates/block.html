@@ -3,7 +3,7 @@
 <div id="block-data"></div>
 <script>
 $(document).ready(function () {
-  $.getJSON('/api/rpc/getblock/{{heightOrAddress}}', function (data) {
+  $.getJSON('/api/getblock/{{heightOrAddress}}', function (data) {
     console.log(data);
     var transformHeader =
       {'<>':'div','html':[

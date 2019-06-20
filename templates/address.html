@@ -4,7 +4,7 @@
 <div id="tx-data"></div>
 <script>
 $(document).ready(function () {
-  $.getJSON('/api/rpc/getaddressbalance/{{address}}', function (data) {
+  $.getJSON('/api/getaddressbalance/{{address}}', function (data) {
     console.log(data);
     var transformBalance =
       {'<>':'div','html':[
@@ -17,7 +17,7 @@ $(document).ready(function () {
     $('#balance-data').text(parseFloat($('#balance-data').text() / 100000000.0));
   });
 
-  $.getJSON('/api/rpc/searchrawtransactions/{{address}}', function (data) {
+  $.getJSON('/api/searchrawtransactions/{{address}}', function (data) {
     console.log(data);
     var transformTx =
       {'<>':'div','html':[

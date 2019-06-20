@@ -9,6 +9,7 @@ awscli = "*"
 [packages]
 zappa = "*"
 flask = "*"
+flask-jsonrpc = "*"
 
 [requires]
 python_version = "3.6"
