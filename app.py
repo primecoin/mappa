@@ -31,8 +31,10 @@ def requestJsonRPC(method, params, useProductionNode = False):
         "jsonrpc": "1.0",
         "id": "mappa",
     }
-    url = app.config['MAINNET_RPC_URL'] if app.config['NETWORK'] == 'mainnet' else app.config['TESTNET_RPC_URL']
-    url = app.config['MAINNET_RPC8_URL'] if useProductionNode else url
+    if useProductionNode:
+        url = app.config['MAINNET_RPC8_URL'] if app.config['NETWORK'] == 'mainnet' else app.config['TESTNET_RPC8_URL']
+    else:
+        url = app.config['MAINNET_RPC_URL'] if app.config['NETWORK'] == 'mainnet' else app.config['TESTNET_RPC_URL']
     return requests.post(url, data=json.dumps(payload), headers=headers).json()
 
 def requestBlock(heightOrAddress, useProductionNode = False):
@@ -86,6 +88,21 @@ def getWork(data = None):
     else:
         return response["result"]
 
+@jsonrpc.method('getblocktemplate(capabilities=dict)')
+def getBlockTemplate(capabilities = None):
+    response = requestJsonRPC("getblocktemplate", [capabilities] if capabilities else [], useProductionNode = True)
+    if "error" in response and response["error"] != None:
+        raise ValueError(response["error"])
+    else:
+        return response["result"]
+
+@jsonrpc.method('submitblock(hexData=str, options=dict)')
+def submitBlock(hexData, options = {}):
+    response = requestJsonRPC("submitblock", [hexData, options], useProductionNode = True)
+    if "error" in response and response["error"] != None:
+        raise ValueError(response["error"])
+    else:
+        return response["result"]
 
 # API based on node JSON-RPC
 
