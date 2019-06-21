@@ -130,6 +130,21 @@ def getBlockchainInfo8():
 @app.route('/api/getwork/')
 def getMinerWork8():
     response = requestJsonRPC("getwork", [], useProductionNode = True)
+    if "error" in response and response["error"] != None:
+        return response
+    import codecs, struct
+    # https://en.bitcoin.it/wiki/Getwork
+    data = codecs.decode(response["result"]["data"], 'hex_codec')
+    header = struct.pack('<20I', *struct.unpack('>20I', data[:80]))
+    (version, prev, merkle, epoch, bits, nonce) = struct.unpack('<I32s32s3I', header)
+    response["result"]["header"] = codecs.encode(header, 'hex_codec').decode('utf-8')
+    response["result"]["version"] = version
+    response["result"]["prev"] = codecs.encode(prev[::-1], 'hex_codec').decode('utf-8')
+    response["result"]["merkle"] = codecs.encode(merkle[::-1], 'hex_codec').decode('utf-8')
+    response["result"]["epoch"] = epoch
+    response["result"]["bits"] = "%02x.%06x" % ((bits >> 24), (bits & 0xffffff))
+    response["result"]["difficulty"] = bits / (float)(1<<24)
+    response["result"]["nonce"] = nonce
     return jsonify(response), 200
 
 @app.route('/api/getbestblock8/')
