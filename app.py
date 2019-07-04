@@ -124,6 +124,16 @@ def getBestBlock():
 def getBlock(heightOrAddress):
     return jsonify(requestBlock(heightOrAddress)), 200
 
+@app.route('/api/syncblock/')
+def syncBlock():
+    response = requestJsonRPC("getblockchaininfo", [])
+    if "error" in response and response["error"] != None:
+        return response
+    else:
+        blockHeight = response["result"]["blocks"]
+        blockHeight = (blockHeight // 504) * 504
+        return jsonify(requestBlock(blockHeight))
+
 @app.route('/api/getrawtransaction/<txid>')
 def getRawTransaction(txid):
     response = requestJsonRPC("getrawtransaction", [txid, True])
