@@ -48,9 +48,23 @@ def requestBlock(heightOrAddress, useProductionNode = False):
         response = requestJsonRPC("getblockhash", [height], useProductionNode)
         if "error" in response and response["error"] != None:
             return response
-        else:
-            blockHash = response["result"]
-    return requestJsonRPC("getblock", [blockHash] if useProductionNode else [blockHash, 2], useProductionNode)
+        blockHash = response["result"]
+
+    response = requestJsonRPC("getblock", [blockHash] if useProductionNode else [blockHash, 2], useProductionNode)
+    if "error" in response and response["error"] != None:
+        return response
+    chain = response["result"]["primechain"]
+    origin = int(response["result"]["primeorigin"], 10)
+    chainType = chain[:3]
+    chainLength = int(chain[3:5], 16)
+    primes = []
+    delta = -1 if chainType == '1CC' else 1
+    for i in range(chainLength):
+        delta *= (-1) if chainType == 'TWN' else 1
+        primes.append(str(origin + delta))
+        origin *= 1 if chainType == 'TWN' and delta == -1 else 2
+    response["result"]["primes"] = primes
+    return response
 
 def requestBestBlock(useProductionNode = False):
     if useProductionNode:

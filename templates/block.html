@@ -11,10 +11,20 @@ $(document).ready(function () {
         {'<>':'div','html':'previous block: <a href="/block/${previousblockhash}">${previousblockhash}</a>'},
         {'<>':'div','html':'height: ${height}'},
         {'<>':'div','html':'difficulty: ${difficulty}'},
+	{'<>':'div','html':'primechain: ${primechain}'},
+	{'<>':'div','html':'primeorigin: ${primeorigin}'},
+        {'<>':'div','html':'primes:'},
+        {'<>':'div','id':'prime-data','html':''},
         {'<>':'div','html':'transactions:'},
         {'<>':'div','id':'tx-data','html':''} ] };
 
     $('#block-data').json2html(data["result"], transformHeader);
+
+    var transformPrime =
+      {'<>':'div','html':[
+        {'<>':'div','html':function(prime, index) { return('<a href="https://www.wolframalpha.com/input/?i=is+'+prime+'+a+prime+number?">'+prime+'</a>'); } }] };
+
+    $('#prime-data').json2html(data["result"]["primes"], transformPrime);
 
     var transformTx =
       {'<>':'div','html':[
