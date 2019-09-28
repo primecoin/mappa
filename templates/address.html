@@ -17,17 +17,14 @@ $(document).ready(function () {
     $('#balance-data').text(parseFloat($('#balance-data').text() / 100000000.0));
   });
 
-  $.getJSON('/api/searchrawtransactions/{{address}}', function (data) {
+  $.getJSON('/api/searchrawtransactions/{{address}}/0', function (data) {
     console.log(data);
     var transformTx =
       {'<>':'div','html':[
         {'<>':'div','html':function(tx, index){return((new Date(1000*tx.blocktime).toDateString()) + ' <a href="/transaction/' + tx.hash + '">' + tx.hash + '</a>');}}] };
 
-    if (data["result"].length >= 1000) {
-      $('#error').text("Warning: Address has over 1000 transactions. Only partial list is shown from the oldest. Primer only supports address with no more than 1000 transactions. Consider moving coins to new address.");
-    }
-    else if (data["result"].length >= 500) {
-      $('#error').text("Warning: Too many transactions. Primer only supports address with no more than 1000 transactions. Consider moving coins to new address.");
+    if (data["result"].length >= 100) {
+      $('#error').text("Warning: Address has too many transactions. Only partial list is shown from the oldest. Consider moving coins to new address.");
     }
     $('#tx-data').json2html(data["result"].reverse(), transformTx);
 

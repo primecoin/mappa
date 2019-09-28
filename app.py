@@ -120,9 +120,13 @@ def submitBlock(hexData, options = {}):
 
 # API based on node JSON-RPC
 
-@app.route('/api/searchrawtransactions/<address>')
-def searchRawTransactions(address):
-    response = requestJsonRPC("searchrawtransactions", [address, 1, 0, 1000])
+@app.route('/api/searchrawtransactions/<address>/<skip>')
+def searchRawTransactions(address, skip):
+    try:
+        sequenceNumber = int(skip)
+    except:
+        sequenceNumber = 0
+    response = requestJsonRPC("searchrawtransactions", [address, 1, sequenceNumber])
     return jsonify(response), 200
 
 @app.route('/api/getaddressbalance/<address>')
