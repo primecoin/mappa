@@ -123,6 +123,11 @@ def submitBlock(hexData, options = {}):
 @app.route('/api/searchrawtransactions/<address>/<int:skip>')
 def searchRawTransactions(address, skip):
     response = requestJsonRPC("searchrawtransactions", [address, 1, skip])
+    while len(response["result"]) > 0 and len(jsonify(response).get_data()) > 5000000:
+        # work around AWS 6MB body size limit
+        transactions = response["result"]
+        half = transactions[:len(transactions)//2]
+        response["result"] = half
     return jsonify(response), 200
 
 @app.route('/api/getaddressbalance/<address>')
