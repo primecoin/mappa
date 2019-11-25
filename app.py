@@ -150,7 +150,7 @@ def syncBlock():
         return response
     else:
         blockHeight = response["result"]["blocks"]
-        blockHeight = (blockHeight // 504) * 504
+        blockHeight = (blockHeight // 2016) * 2016
         return jsonify(requestBlock(blockHeight))
 
 @app.route('/api/getrawtransaction/<txid>')
