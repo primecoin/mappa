@@ -6,11 +6,21 @@ A minimalist explorer for Primecoin.
 
 
 ```
-git clone ssh://git@github.com/primecoin/mappa
-cd mappa
-pipenv shell
-pipenv install zappa flask Flask-JSONRPC
-pipenv install --dev awscli
+### Instructions for Ubuntu 18.04 LTS
+### Install linuxbrew:
+$ sudo apt install linuxbrew-wrapper
+$ brew update
+$ brew install python3
+
+### Clone repo:
+$ git clone ssh://git@github.com/primecoin/mappa
+$ cd mappa
+
+### Set up pipenv:
+$ pip3 install --upgrade pipenv
+$ pipenv shell
+$ pipenv install
+$ pipenv install --dev awscli
 ```
 
 ### Configurations
