@@ -1,7 +1,6 @@
 # app.py
 
-from flask import Flask, jsonify, render_template
-from flask_jsonrpc import JSONRPC
+from flask import Flask, jsonify, render_template, request
 
 import json
 import requests
@@ -20,8 +19,86 @@ if app.config['NETWORK'] == 'mainnet' and 'MAINNET_RPC8_URL' not in app.config:
 if app.config['NETWORK'] == 'testnet' and 'TESTNET_RPC_URL' not in app.config:
     raise RuntimeError("Setting 'TESTNET_RPC_URL' is not configured")
 
+
+# JSON-RPC pass through to node
+
+from flask_jsonrpc import JSONRPC
 jsonrpc = JSONRPC(app, '/jsonrpc/')
 
+@jsonrpc.method('getwork(data=str)')
+def getWork(data = None):
+    response = requestJsonRPC("getwork", [] if data == None else [data], useProductionNode = True)
+    if "error" in response and response["error"] != None:
+        raise ValueError(response["error"])
+    else:
+        return response["result"]
+
+@jsonrpc.method('getblocktemplate(capabilities=dict)')
+def getBlockTemplate(capabilities = None):
+    response = requestJsonRPC("getblocktemplate", [capabilities] if capabilities else [], useProductionNode = True)
+    if "error" in response and response["error"] != None:
+        raise ValueError(response["error"])
+    else:
+        return response["result"]
+
+@jsonrpc.method('submitblock(hexData=str, options=dict)')
+def submitBlock(hexData, options = {}):
+    response = requestJsonRPC("submitblock", [hexData, options], useProductionNode = True)
+    if "error" in response and response["error"] != None:
+        raise ValueError(response["error"])
+    else:
+        return response["result"]
+
+
+# Restful API
+
+from flask_restful import Resource, Api
+api = Api(app)
+
+class MinerGetWork(Resource):
+    def get(self):
+        response = requestJsonRPC("getwork", [], useProductionNode = True)
+        if "error" in response and response["error"] != None:
+            return response
+        import codecs, struct, hashlib
+        # https://en.bitcoin.it/wiki/Getwork
+        # (Quote) "data: Pre-processed SHA-2 input chunks, in little-endian order,
+        #          as a hexadecimal-encoded string.
+        #          Because getwork provides the data in little endian, and SHA256 works
+        #          in big endian, for every 32-bit chunk you need to swap the byte order"
+        # NOTE: the above quote of bitcoin wiki is wrong and very misleading!
+        # data is NOT little-endian, as data is each 4-byte reversed from native format!
+        # data should not be referred to as big-endian either. As the prev and merkle
+        # uint256's inside data are not big-endian, it would be confusing to call it big-endian.
+        # Also, double sha256 header hash is performed on NATIVE header which IS LITTLE-ENDIAN!
+        data = codecs.decode(response["result"]["data"], 'hex_codec')
+        header = struct.pack('<20I', *struct.unpack('!20I', data[:80]))
+        (version, prev, merkle, epoch, bits, nonce) = struct.unpack('<I32s32s3I', header)
+        headerHash = hashlib.sha256(hashlib.sha256(header).digest()).digest()
+        response["result"]["header"] = codecs.encode(header, 'hex_codec').decode('utf-8')
+        response["result"]["headerHash"] = codecs.encode(headerHash[::-1], 'hex_codec').decode('utf-8')
+        response["result"]["version"] = version
+        response["result"]["prev"] = codecs.encode(prev[::-1], 'hex_codec').decode('utf-8')
+        response["result"]["merkle"] = codecs.encode(merkle[::-1], 'hex_codec').decode('utf-8')
+        response["result"]["epoch"] = epoch
+        response["result"]["bits"] = "%02x.%06x" % ((bits >> 24), (bits & 0xffffff))
+        response["result"]["difficulty"] = bits / (float)(1<<24)
+        response["result"]["nonce"] = nonce
+        return response
+    def put(self):
+        import codecs, struct
+        multiplier = codecs.decode(request.form["multiplier"].zfill(64), 'hex_codec')[::-1]
+        data = codecs.decode(request.form["data"], 'hex_codec')
+        native = struct.pack('<32I', *struct.unpack('!32I', data))
+        (header, mid, tail) = struct.unpack('<80s32s16s', native)
+        native = struct.pack('<80s32s16s', header, multiplier, tail)
+        data = struct.pack('!32I', *struct.unpack('<32I', native))
+        response = requestJsonRPC("getwork", [codecs.encode(data, 'hex_codec').decode('utf-8')], useProductionNode = True)
+        return response
+api.add_resource(MinerGetWork, '/api/getwork/')
+
+
+# Node JSON-RPC Access
 
 def requestJsonRPC(method, params, useProductionNode = False):
     headers = {'content-type': 'application/json'}
@@ -92,32 +169,6 @@ def checkConsensus(height):
     return response["result"]["hash"] == response8["result"]["hash"]
 
 
-# JSON-RPC pass through to node
-
-@jsonrpc.method('getwork(data=str)')
-def getWork(data = None):
-    response = requestJsonRPC("getwork", [] if data == None else [data], useProductionNode = True)
-    if "error" in response and response["error"] != None:
-        raise ValueError(response["error"])
-    else:
-        return response["result"]
-
-@jsonrpc.method('getblocktemplate(capabilities=dict)')
-def getBlockTemplate(capabilities = None):
-    response = requestJsonRPC("getblocktemplate", [capabilities] if capabilities else [], useProductionNode = True)
-    if "error" in response and response["error"] != None:
-        raise ValueError(response["error"])
-    else:
-        return response["result"]
-
-@jsonrpc.method('submitblock(hexData=str, options=dict)')
-def submitBlock(hexData, options = {}):
-    response = requestJsonRPC("submitblock", [hexData, options], useProductionNode = True)
-    if "error" in response and response["error"] != None:
-        raise ValueError(response["error"])
-    else:
-        return response["result"]
-
 # API based on node JSON-RPC
 
 @app.route('/api/searchrawtransactions/<address>/<int:skip>')
@@ -171,26 +222,6 @@ def getPeerInfo():
 @app.route('/api/getinfo/')
 def getBlockchainInfo8():
     response = requestJsonRPC("getinfo", [], useProductionNode = True)
-    return jsonify(response), 200
-
-@app.route('/api/getwork/')
-def getMinerWork8():
-    response = requestJsonRPC("getwork", [], useProductionNode = True)
-    if "error" in response and response["error"] != None:
-        return response
-    import codecs, struct
-    # https://en.bitcoin.it/wiki/Getwork
-    data = codecs.decode(response["result"]["data"], 'hex_codec')
-    header = struct.pack('<20I', *struct.unpack('>20I', data[:80]))
-    (version, prev, merkle, epoch, bits, nonce) = struct.unpack('<I32s32s3I', header)
-    response["result"]["header"] = codecs.encode(header, 'hex_codec').decode('utf-8')
-    response["result"]["version"] = version
-    response["result"]["prev"] = codecs.encode(prev[::-1], 'hex_codec').decode('utf-8')
-    response["result"]["merkle"] = codecs.encode(merkle[::-1], 'hex_codec').decode('utf-8')
-    response["result"]["epoch"] = epoch
-    response["result"]["bits"] = "%02x.%06x" % ((bits >> 24), (bits & 0xffffff))
-    response["result"]["difficulty"] = bits / (float)(1<<24)
-    response["result"]["nonce"] = nonce
     return jsonify(response), 200
 
 @app.route('/api/getbestblock8/')
