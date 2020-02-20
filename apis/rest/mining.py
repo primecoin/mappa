@@ -37,9 +37,20 @@ class MinerGetWork(Resource):
         return response
     def put(self):
         import codecs, struct
-        from flask import request
-        multiplier = codecs.decode(request.form["multiplier"].zfill(64), 'hex_codec')[::-1]
-        data = codecs.decode(request.form["data"], 'hex_codec')
+        from flask import abort, request
+        if not request.is_json:
+            abort(400, 'JSON submission with matching MIME type expected.')
+        try:
+            submit = request.get_json()
+        except Exception as e:
+            abort(400, str(e))
+        if 'data' not in submit or 'multiplier' not in submit:
+            abort(400, 'Hex string fields data and multiplier are expected.')
+        try:
+            multiplier = codecs.decode(submit["multiplier"].zfill(64), 'hex_codec')[::-1]
+            data = codecs.decode(submit["data"], 'hex_codec')
+        except Exception as e:
+            abort(400, str(e))
         native = struct.pack('<32I', *struct.unpack('!32I', data))
         (header, mid, tail) = struct.unpack('<80s32s16s', native)
         native = struct.pack('<80s32s16s', header, multiplier, tail)
