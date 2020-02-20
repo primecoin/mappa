@@ -1,9 +1,4 @@
-# app.py
-
-from flask import Flask, jsonify, render_template, request
-
-import json
-import requests
+from flask import Flask, jsonify, render_template
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('config')
@@ -18,101 +13,20 @@ if app.config['NETWORK'] == 'mainnet' and 'MAINNET_RPC8_URL' not in app.config:
     raise RuntimeError("Setting 'MAINNET_RPC8_URL' is not configured")
 if app.config['NETWORK'] == 'testnet' and 'TESTNET_RPC_URL' not in app.config:
     raise RuntimeError("Setting 'TESTNET_RPC_URL' is not configured")
+node8Url = app.config['MAINNET_RPC8_URL'] if app.config['NETWORK'] == 'mainnet' else app.config['TESTNET_RPC8_URL']
+node16Url = app.config['MAINNET_RPC_URL'] if app.config['NETWORK'] == 'mainnet' else app.config['TESTNET_RPC_URL']
 
 
 # JSON-RPC pass through to node
 
 from flask_jsonrpc import JSONRPC
-jsonrpc = JSONRPC(app, '/jsonrpc/')
-
-@jsonrpc.method('getwork(data=str)')
-def getWork(data = None):
-    response = requestJsonRPC("getwork", [] if data == None else [data], useProductionNode = True)
-    if "error" in response and response["error"] != None:
-        raise ValueError(response["error"])
-    else:
-        return response["result"]
-
-@jsonrpc.method('getblocktemplate(capabilities=dict)')
-def getBlockTemplate(capabilities = None):
-    response = requestJsonRPC("getblocktemplate", [capabilities] if capabilities else [], useProductionNode = True)
-    if "error" in response and response["error"] != None:
-        raise ValueError(response["error"])
-    else:
-        return response["result"]
-
-@jsonrpc.method('submitblock(hexData=str, options=dict)')
-def submitBlock(hexData, options = {}):
-    response = requestJsonRPC("submitblock", [hexData, options], useProductionNode = True)
-    if "error" in response and response["error"] != None:
-        raise ValueError(response["error"])
-    else:
-        return response["result"]
+jsonrpc = JSONRPC(app, '/api/jsonrpc/', enable_web_browsable_api=True)
+import apis.jsonrpc.mining
 
 
-# Restful API
+# Blockchain functions
 
-from flask_restful import Resource, Api
-api = Api(app)
-
-class MinerGetWork(Resource):
-    def get(self):
-        response = requestJsonRPC("getwork", [], useProductionNode = True)
-        if "error" in response and response["error"] != None:
-            return response
-        import codecs, struct, hashlib
-        # https://en.bitcoin.it/wiki/Getwork
-        # (Quote) "data: Pre-processed SHA-2 input chunks, in little-endian order,
-        #          as a hexadecimal-encoded string.
-        #          Because getwork provides the data in little endian, and SHA256 works
-        #          in big endian, for every 32-bit chunk you need to swap the byte order"
-        # NOTE: the above quote of bitcoin wiki is wrong and very misleading!
-        # data is NOT little-endian, as data is each 4-byte reversed from native format!
-        # data should not be referred to as big-endian either. As the prev and merkle
-        # uint256's inside data are not big-endian, it would be confusing to call it big-endian.
-        # Also, double sha256 header hash is performed on NATIVE header which IS LITTLE-ENDIAN!
-        data = codecs.decode(response["result"]["data"], 'hex_codec')
-        header = struct.pack('<20I', *struct.unpack('!20I', data[:80]))
-        (version, prev, merkle, epoch, bits, nonce) = struct.unpack('<I32s32s3I', header)
-        headerHash = hashlib.sha256(hashlib.sha256(header).digest()).digest()
-        response["result"]["header"] = codecs.encode(header, 'hex_codec').decode('utf-8')
-        response["result"]["headerHash"] = codecs.encode(headerHash[::-1], 'hex_codec').decode('utf-8')
-        response["result"]["version"] = version
-        response["result"]["prev"] = codecs.encode(prev[::-1], 'hex_codec').decode('utf-8')
-        response["result"]["merkle"] = codecs.encode(merkle[::-1], 'hex_codec').decode('utf-8')
-        response["result"]["epoch"] = epoch
-        response["result"]["bits"] = "%02x.%06x" % ((bits >> 24), (bits & 0xffffff))
-        response["result"]["difficulty"] = bits / (float)(1<<24)
-        response["result"]["nonce"] = nonce
-        return response
-    def put(self):
-        import codecs, struct
-        multiplier = codecs.decode(request.form["multiplier"].zfill(64), 'hex_codec')[::-1]
-        data = codecs.decode(request.form["data"], 'hex_codec')
-        native = struct.pack('<32I', *struct.unpack('!32I', data))
-        (header, mid, tail) = struct.unpack('<80s32s16s', native)
-        native = struct.pack('<80s32s16s', header, multiplier, tail)
-        data = struct.pack('!32I', *struct.unpack('<32I', native))
-        response = requestJsonRPC("getwork", [codecs.encode(data, 'hex_codec').decode('utf-8')], useProductionNode = True)
-        return response
-api.add_resource(MinerGetWork, '/api/getwork/')
-
-
-# Node JSON-RPC Access
-
-def requestJsonRPC(method, params, useProductionNode = False):
-    headers = {'content-type': 'application/json'}
-    payload = {
-        "method": method,
-        "params": params,
-        "jsonrpc": "1.0",
-        "id": "mappa",
-    }
-    if useProductionNode:
-        url = app.config['MAINNET_RPC8_URL'] if app.config['NETWORK'] == 'mainnet' else app.config['TESTNET_RPC8_URL']
-    else:
-        url = app.config['MAINNET_RPC_URL'] if app.config['NETWORK'] == 'mainnet' else app.config['TESTNET_RPC_URL']
-    return requests.post(url, data=json.dumps(payload), headers=headers).json()
+from apis.jsonrpc.client import requestJsonRPC
 
 def requestBlock(heightOrAddress, useProductionNode = False):
     try:
@@ -122,12 +36,12 @@ def requestBlock(heightOrAddress, useProductionNode = False):
         blockHash = heightOrAddress
         isHeight = False
     if isHeight:
-        response = requestJsonRPC("getblockhash", [height], useProductionNode)
+        response = requestJsonRPC(node8Url if useProductionNode else node16Url, "getblockhash", [height])
         if "error" in response and response["error"] != None:
             return response
         blockHash = response["result"]
 
-    response = requestJsonRPC("getblock", [blockHash] if useProductionNode else [blockHash, 2], useProductionNode)
+    response = requestJsonRPC(node8Url if useProductionNode else node16Url, "getblock", [blockHash] if useProductionNode else [blockHash, 2])
     if "error" in response and response["error"] != None:
         return response
     chain = response["result"]["primechain"]
@@ -145,14 +59,14 @@ def requestBlock(heightOrAddress, useProductionNode = False):
 
 def requestBestBlock(useProductionNode = False):
     if useProductionNode:
-        response = requestJsonRPC("getinfo", [], useProductionNode)
+        response = requestJsonRPC(node8Url, "getinfo", [])
         if "error" in response and response["error"] != None:
             return response
         else:
             blockHeight = response["result"]["blocks"]
             return requestBlock(blockHeight, useProductionNode)
     else:
-        response = requestJsonRPC("getbestblockhash", [])
+        response = requestJsonRPC(node16Url, "getbestblockhash", [])
         if "error" in response and response["error"] != None:
             return response
         else:
@@ -173,7 +87,7 @@ def checkConsensus(height):
 
 @app.route('/api/searchrawtransactions/<address>/<int:skip>')
 def searchRawTransactions(address, skip):
-    response = requestJsonRPC("searchrawtransactions", [address, 1, skip])
+    response = requestJsonRPC(node16Url, "searchrawtransactions", [address, 1, skip])
     while len(response["result"]) > 0 and len(jsonify(response).get_data()) > 5000000:
         # work around AWS 6MB body size limit
         transactions = response["result"]
@@ -183,7 +97,8 @@ def searchRawTransactions(address, skip):
 
 @app.route('/api/getaddressbalance/<address>')
 def getAddressBalance(address):
-    response = requestJsonRPC("getaddressbalance", [ json.dumps({"addresses": [address]}) ] )
+    from json import dumps
+    response = requestJsonRPC(node16Url, "getaddressbalance", [ dumps({"addresses": [address]}) ] )
     return jsonify(response), 200
 
 @app.route('/api/getbestblock/')
@@ -196,7 +111,7 @@ def getBlock(heightOrAddress):
 
 @app.route('/api/syncblock/')
 def syncBlock():
-    response = requestJsonRPC("getblockchaininfo", [])
+    response = requestJsonRPC(node16Url, "getblockchaininfo", [])
     if "error" in response and response["error"] != None:
         return response
     else:
@@ -206,22 +121,22 @@ def syncBlock():
 
 @app.route('/api/getrawtransaction/<txid>')
 def getRawTransaction(txid):
-    response = requestJsonRPC("getrawtransaction", [txid, True])
+    response = requestJsonRPC(node16Url, "getrawtransaction", [txid, True])
     return jsonify(response), 200
 
 @app.route('/api/getblockchaininfo/')
 def getBlockchainInfo():
-    response = requestJsonRPC("getblockchaininfo", [])
+    response = requestJsonRPC(node16Url, "getblockchaininfo", [])
     return jsonify(response), 200
 
 @app.route('/api/getpeerinfo/')
 def getPeerInfo():
-    response = requestJsonRPC("getpeerinfo", [])
+    response = requestJsonRPC(node16Url, "getpeerinfo", [])
     return jsonify(response), 200
 
 @app.route('/api/getinfo/')
 def getBlockchainInfo8():
-    response = requestJsonRPC("getinfo", [], useProductionNode = True)
+    response = requestJsonRPC(node8Url, "getinfo", [])
     return jsonify(response), 200
 
 @app.route('/api/getbestblock8/')
@@ -265,6 +180,13 @@ def transaction(txid):
 @app.route("/address/<address>")
 def address(address):
     return render_template("address.html", **locals())
+
+
+# Restful API
+
+from apis.rest import api
+api.init_app(app)
+
 
 # include this for local dev
 if __name__ == '__main__':
