@@ -1,5 +1,6 @@
 from flask_restplus import Api
 
+from .blockchain import api as blockchainApi
 from .mining import api as miningApi
 
 api = Api(
@@ -8,4 +9,5 @@ api = Api(
     doc='/api/rest/'
 )
 
+api.add_namespace(blockchainApi, path='/api/rest/blockchain')
 api.add_namespace(miningApi, path='/api/rest/mining')
