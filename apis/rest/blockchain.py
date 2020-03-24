@@ -27,27 +27,30 @@ class GetBlock(Resource):
         response = requestJsonRPC(node16Url, "getblock", [blockHash, 0])
         if "error" in response and response["error"] != None:
             return response
+        import codecs, hashlib
         blockRawHex = response["result"]
-        headerRawHex = blockRawHex[:80*2]
-        import codecs, struct, hashlib
-        header = codecs.decode(headerRawHex, 'hex_codec')
-        headerHash = hashlib.sha256(hashlib.sha256(header).digest()).digest()
+        blockBytes = codecs.decode(blockRawHex, 'hex_codec')
+        headerBytes = blockBytes[:80]
+        headerHash = hashlib.sha256(hashlib.sha256(headerBytes).digest()).digest()
         # Next get deserialized block
         response = requestJsonRPC(node16Url, "getblock", [blockHash, 2])
         if "error" in response and response["error"] != None:
             return response
         # Fill in serialized block and header
         response["result"]["hex"] = blockRawHex
-        response["result"]["header"] = codecs.encode(header, 'hex_codec').decode('utf-8')
+        response["result"]["header"] = codecs.encode(headerBytes, 'hex_codec').decode('utf-8')
         response["result"]["headerHash"] = codecs.encode(headerHash[::-1], 'hex_codec').decode('utf-8')
         # Fill in multiplier
-        multiplierLength = int(blockRawHex[80*2:81*2], 16)
-        multiplierBytes = codecs.decode(blockRawHex[81*2:(81+multiplierLength)*2], 'hex_codec')
+        multiplierLength = blockBytes[80]
+        multiplierBytes = blockBytes[81:81+multiplierLength]
         multiplierHex = codecs.encode(multiplierBytes[::-1], 'hex_codec').decode('utf-8')
         response["result"]["multiplierHex"] = multiplierHex
         origin = int(response["result"]["primeorigin"], 10)
         if origin != int(multiplierHex, 16) * int(response["result"]["headerHash"], 16):
             response["error"] = "Invalid proof-of-work: origin mismatch"
+        blockHash = hashlib.sha256(hashlib.sha256(blockBytes[:81+multiplierLength]).digest()).digest()
+        if response["result"]["hash"] != codecs.encode(blockHash[::-1], 'hex_codec').decode('utf-8'):
+            response["error"] = "Block hash mismatch"
         # Derive primes in primechain
         chain = response["result"]["primechain"]
         chainType = chain[:3]
