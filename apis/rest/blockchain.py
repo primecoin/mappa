@@ -28,7 +28,7 @@ class GetBlock(Resource):
         if "error" in response and response["error"] != None:
             return response
         blockRawHex = response["result"]
-        headerRawHex = blockRawHex[:160]
+        headerRawHex = blockRawHex[:80*2]
         import codecs, struct, hashlib
         header = codecs.decode(headerRawHex, 'hex_codec')
         headerHash = hashlib.sha256(hashlib.sha256(header).digest()).digest()
@@ -36,9 +36,20 @@ class GetBlock(Resource):
         response = requestJsonRPC(node16Url, "getblock", [blockHash, 2])
         if "error" in response and response["error"] != None:
             return response
-        # Next derive primes in primechain
-        chain = response["result"]["primechain"]
+        # Fill in serialized block and header
+        response["result"]["hex"] = blockRawHex
+        response["result"]["header"] = codecs.encode(header, 'hex_codec').decode('utf-8')
+        response["result"]["headerHash"] = codecs.encode(headerHash[::-1], 'hex_codec').decode('utf-8')
+        # Fill in multiplier
+        multiplierLength = int(blockRawHex[80*2:81*2], 16)
+        multiplierBytes = codecs.decode(blockRawHex[81*2:(81+multiplierLength)*2], 'hex_codec')
+        multiplierHex = codecs.encode(multiplierBytes[::-1], 'hex_codec').decode('utf-8')
+        response["result"]["multiplierHex"] = multiplierHex
         origin = int(response["result"]["primeorigin"], 10)
+        if origin != int(multiplierHex, 16) * int(response["result"]["headerHash"], 16):
+            response["error"] = "Invalid proof-of-work: origin mismatch"
+        # Derive primes in primechain
+        chain = response["result"]["primechain"]
         chainType = chain[:3]
         chainLength = int(chain[3:5], 16)
         primes = []
@@ -48,13 +59,4 @@ class GetBlock(Resource):
             primes.append(str(origin + delta))
             origin *= 2 if chainType != 'TWN' or delta == 1 else 1
         response["result"]["primes"] = primes
-        # Fill in serialized block and header
-        response["result"]["hex"] = blockRawHex
-        response["result"]["header"] = codecs.encode(header, 'hex_codec').decode('utf-8')
-        response["result"]["headerHash"] = codecs.encode(headerHash[::-1], 'hex_codec').decode('utf-8')
-        # Fill in multiplier
-        multiplier = origin // int(response["result"]["headerHash"], 16)
-        remainder = origin % int(response["result"]["headerHash"], 16)
-        response["result"]["multiplierHex"] = hex(multiplier)[2:]
-        response["result"]["multiplierValid"] = (remainder == 0)
         return response
