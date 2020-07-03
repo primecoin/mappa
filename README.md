@@ -7,17 +7,13 @@ A minimalist explorer for Primecoin.
 
 ```
 ### Instructions for Ubuntu 18.04 LTS
-### Install linuxbrew:
-$ sudo apt install linuxbrew-wrapper
-$ brew update
-$ brew install python3
-
 ### Clone repo:
 $ git clone ssh://git@github.com/primecoin/mappa
 $ cd mappa
 
 ### Set up pipenv:
-$ pip3 install --upgrade pipenv
+$ sudo apt install python3-pip
+$ sudo -H pip3 install --upgrade pipenv
 $ pipenv shell
 $ pipenv install
 $ pipenv install --dev awscli
