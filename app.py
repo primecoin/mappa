@@ -20,7 +20,7 @@ node16Url = app.config['MAINNET_RPC_URL'] if app.config['NETWORK'] == 'mainnet' 
 # JSON-RPC pass through to node
 
 from flask_jsonrpc import JSONRPC
-jsonrpc = JSONRPC(app, '/api/jsonrpc/', enable_web_browsable_api=True)
+jsonrpc = JSONRPC(app, '/api/jsonrpc', enable_web_browsable_api=True)
 import apis.jsonrpc.mining
 
 
