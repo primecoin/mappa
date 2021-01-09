@@ -3,6 +3,14 @@ from flask import request
 from struct import pack, unpack
 from .client import requestJsonRPC
 
+@jsonrpc.method('getdifficulty()')
+def getDifficulty():
+    response = requestJsonRPC(node16Url, "getdifficulty", [])
+    if "error" in response and response["error"] is not None:
+        raise ValueError(response["error"])
+    else:
+        return response["result"]
+
 @jsonrpc.method('getwork(data=str)')
 def getWork(data = None):
     if not request.get_json():
