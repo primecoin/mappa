@@ -30,5 +30,4 @@ USER mappa
 COPY . .
 
 # Run mappa
-ENTRYPOINT ["python", "-m", "flask"]
-CMD ["run", "--host=0.0.0.0"]
+ENTRYPOINT ["python", "app.py", "--host=0.0.0.0"]

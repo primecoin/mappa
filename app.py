@@ -1,28 +1,16 @@
 from flask import Flask, jsonify, render_template
 
 app = Flask(__name__, instance_relative_config=True)
-app.config.from_object('config')
-app.config.from_pyfile('config.py')
-if 'NETWORK' not in app.config:
-    raise RuntimeError("Setting 'NETWORK' is not configured")
-if app.config['NETWORK'] != 'mainnet' and app.config['NETWORK'] != 'testnet':
-    raise RuntimeError("Setting 'NETWORK' can only be 'mainnet' or 'testnet'")
-if app.config['NETWORK'] == 'mainnet' and 'MAINNET_RPC_URL' not in app.config:
-    raise RuntimeError("Setting 'MAINNET_RPC_URL' is not configured")
-if app.config['NETWORK'] == 'mainnet' and 'MAINNET_RPC8_URL' not in app.config:
-    raise RuntimeError("Setting 'MAINNET_RPC8_URL' is not configured")
-if app.config['NETWORK'] == 'testnet' and 'TESTNET_RPC_URL' not in app.config:
-    raise RuntimeError("Setting 'TESTNET_RPC_URL' is not configured")
-node8Url = app.config['MAINNET_RPC8_URL'] if app.config['NETWORK'] == 'mainnet' else app.config['TESTNET_RPC8_URL']
-node16Url = app.config['MAINNET_RPC_URL'] if app.config['NETWORK'] == 'mainnet' else app.config['TESTNET_RPC_URL']
-
+try:
+    app.config.from_pyfile('config.py')
+except FileNotFoundError:
+    pass
 
 # JSON-RPC pass through to node
 
 from flask_jsonrpc import JSONRPC
 jsonrpc = JSONRPC(app, '/api/jsonrpc', enable_web_browsable_api=True)
 import apis.jsonrpc.mining
-
 
 # Blockchain functions
 
@@ -36,12 +24,12 @@ def requestBlock(heightOrAddress, useProductionNode = False):
         blockHash = heightOrAddress
         isHeight = False
     if isHeight:
-        response = requestJsonRPC(node8Url if useProductionNode else node16Url, "getblockhash", [height])
+        response = requestJsonRPC(app.config["RPC8"] if useProductionNode else app.config["RPC"], "getblockhash", [height])
         if "error" in response and response["error"] != None:
             return response
         blockHash = response["result"]
 
-    response = requestJsonRPC(node8Url if useProductionNode else node16Url, "getblock", [blockHash] if useProductionNode else [blockHash, 2])
+    response = requestJsonRPC(app.config["RPC8"] if useProductionNode else app.config["RPC"], "getblock", [blockHash] if useProductionNode else [blockHash, 2])
     if "error" in response and response["error"] != None:
         return response
     chain = response["result"]["primechain"]
@@ -59,14 +47,14 @@ def requestBlock(heightOrAddress, useProductionNode = False):
 
 def requestBestBlock(useProductionNode = False):
     if useProductionNode:
-        response = requestJsonRPC(node8Url, "getinfo", [])
+        response = requestJsonRPC(app.config["RPC8"], "getinfo", [])
         if "error" in response and response["error"] != None:
             return response
         else:
             blockHeight = response["result"]["blocks"]
             return requestBlock(blockHeight, useProductionNode)
     else:
-        response = requestJsonRPC(node16Url, "getbestblockhash", [])
+        response = requestJsonRPC(app.config["RPC"], "getbestblockhash", [])
         if "error" in response and response["error"] != None:
             return response
         else:
@@ -87,7 +75,7 @@ def checkConsensus(height):
 
 @app.route('/api/searchrawtransactions/<address>/<int:skip>')
 def searchRawTransactions(address, skip):
-    response = requestJsonRPC(node16Url, "searchrawtransactions", [address, 1, skip])
+    response = requestJsonRPC(app.config["RPC"], "searchrawtransactions", [address, 1, skip])
     while len(response["result"]) > 0 and len(jsonify(response).get_data()) > 5000000:
         # work around AWS 6MB body size limit
         transactions = response["result"]
@@ -98,7 +86,7 @@ def searchRawTransactions(address, skip):
 @app.route('/api/getaddressbalance/<address>')
 def getAddressBalance(address):
     from json import dumps
-    response = requestJsonRPC(node16Url, "getaddressbalance", [ dumps({"addresses": [address]}) ] )
+    response = requestJsonRPC(app.config["RPC"], "getaddressbalance", [ dumps({"addresses": [address]}) ] )
     return jsonify(response), 200
 
 @app.route('/api/getbestblock/')
@@ -111,7 +99,7 @@ def getBlock(heightOrAddress):
 
 @app.route('/api/syncblock/')
 def syncBlock():
-    response = requestJsonRPC(node16Url, "getblockchaininfo", [])
+    response = requestJsonRPC(app.config["RPC"], "getblockchaininfo", [])
     if "error" in response and response["error"] != None:
         return response
     else:
@@ -121,22 +109,22 @@ def syncBlock():
 
 @app.route('/api/getrawtransaction/<txid>')
 def getRawTransaction(txid):
-    response = requestJsonRPC(node16Url, "getrawtransaction", [txid, True])
+    response = requestJsonRPC(app.config["RPC"], "getrawtransaction", [txid, True])
     return jsonify(response), 200
 
 @app.route('/api/getblockchaininfo/')
 def getBlockchainInfo():
-    response = requestJsonRPC(node16Url, "getblockchaininfo", [])
+    response = requestJsonRPC(app.config["RPC"], "getblockchaininfo", [])
     return jsonify(response), 200
 
 @app.route('/api/getpeerinfo/')
 def getPeerInfo():
-    response = requestJsonRPC(node16Url, "getpeerinfo", [])
+    response = requestJsonRPC(app.config["RPC"], "getpeerinfo", [])
     return jsonify(response), 200
 
 @app.route('/api/getinfo/')
 def getBlockchainInfo8():
-    response = requestJsonRPC(node8Url, "getinfo", [])
+    response = requestJsonRPC(app.config["RPC8"], "getinfo", [])
     return jsonify(response), 200
 
 @app.route('/api/getbestblock8/')
@@ -190,4 +178,14 @@ api.init_app(app)
 
 # include this for local dev
 if __name__ == '__main__':
-    app.run()
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("--rpc")
+    parser.add_argument("--rpc8")
+    parser.add_argument("--host")
+    args = vars(parser.parse_args())
+    if args["rpc"]:
+        app.config["RPC"] = args["rpc"]
+    if args["rpc8"]:
+        app.config["RPC8"] = args["rpc8"]
+    app.run(host=(args["host"] if "host" in args else "127.0.0.1"))

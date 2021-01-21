@@ -1,5 +1,5 @@
+from flask import current_app as app
 from flask_restplus import Namespace, Resource
-from app import node8Url, node16Url
 from ..jsonrpc.client import requestJsonRPC
 
 api = Namespace(name='Blockchain', path='')
@@ -7,7 +7,7 @@ api = Namespace(name='Blockchain', path='')
 @api.route("/getdifficulty")
 class GetDifficulty(Resource):
     def get(self):
-        return requestJsonRPC(node8Url, "getdifficulty", [])
+        return requestJsonRPC(app.config["RPC8"], "getdifficulty", [])
 
 @api.route("/getblock/<string:heightOrHash>")
 class GetBlock(Resource):
@@ -19,12 +19,12 @@ class GetBlock(Resource):
             blockHash = heightOrHash
             isHeight = False
         if isHeight:
-            response = requestJsonRPC(node16Url, "getblockhash", [height])
+            response = requestJsonRPC(app.config["RPC"], "getblockhash", [height])
             if "error" in response and response["error"] != None:
                 return response
             blockHash = response["result"]
         # First get raw block hex
-        response = requestJsonRPC(node16Url, "getblock", [blockHash, 0])
+        response = requestJsonRPC(app.config["RPC"], "getblock", [blockHash, 0])
         if "error" in response and response["error"] != None:
             return response
         import codecs, hashlib
@@ -33,7 +33,7 @@ class GetBlock(Resource):
         headerBytes = blockBytes[:80]
         headerHash = hashlib.sha256(hashlib.sha256(headerBytes).digest()).digest()
         # Next get deserialized block
-        response = requestJsonRPC(node16Url, "getblock", [blockHash, 2])
+        response = requestJsonRPC(app.config["RPC"], "getblock", [blockHash, 2])
         if "error" in response and response["error"] != None:
             return response
         # Fill in serialized block and header

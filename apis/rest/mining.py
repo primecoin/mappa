@@ -1,5 +1,5 @@
+from flask import current_app as app
 from flask_restplus import Namespace, Resource
-from app import node16Url
 from ..jsonrpc.client import requestJsonRPC
 
 api = Namespace(name='Mining', path='')
@@ -7,7 +7,7 @@ api = Namespace(name='Mining', path='')
 @api.route("/getwork")
 class MinerGetWork(Resource):
     def get(self):
-        response = requestJsonRPC(node16Url, "getwork", [])
+        response = requestJsonRPC(app.config["RPC"], "getwork", [])
         if "error" in response and response["error"] != None:
             return response
         import codecs, struct, hashlib
@@ -55,6 +55,6 @@ class MinerGetWork(Resource):
         (header, mid, tail) = struct.unpack('<80s32s16s', native)
         native = struct.pack('<80s32s16s', header, multiplier, tail)
         data = struct.pack('!32I', *struct.unpack('<32I', native))
-        response = requestJsonRPC(node16Url, "getwork", [codecs.encode(data, 'hex_codec').decode('utf-8')])
+        response = requestJsonRPC(app.config["RPC"], "getwork", [codecs.encode(data, 'hex_codec').decode('utf-8')])
         return response
 

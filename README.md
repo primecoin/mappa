@@ -5,7 +5,7 @@ A minimalist explorer for Primecoin.
 ### Installation
 
 
-```
+```sh
 ### Instructions for Ubuntu 18.04 LTS
 ### Clone repo:
 $ git clone ssh://git@github.com/primecoin/mappa
@@ -21,16 +21,9 @@ $ pipenv install --dev awscli
 
 ### Configurations
 
-Configure the flask app via configuration files `config.py` and `instance/config.py`:
+Configure the flask app via configuration file `instance/config.py`:
 
-```
-# config.py
-
-# Configure mainnet/testnet
-NETWORK = "mainnet"
-```
-
-```
+```sh
 # instance/config.py
 #
 # To open node rpc to the Internet, enable rpc settings in node configuration.
@@ -44,37 +37,44 @@ NETWORK = "mainnet"
 # rpcauth=<output line from share/rpcauth/rpcauth.py>
 # rpcallowip=0.0.0.0/0
 
-MAINNET_RPC_URL = "http://<rpcuser>:<rpcpassword>@<nodedomain>:9912"
-TESTNET_RPC_URL = "http://<rpcuser>:<rpcpassword>@<nodedomain>:9914"
-MAINNET_RPC8_URL = "http://<rpcuser>:<rpcpassword>@<nodedomain>:9912"
-TESTNET_RPC8_URL = "http://<rpcuser>:<rpcpassword>@<nodedomain>:9914"
+RPC = "http://<rpc-user>:<rpc-password>@<rpc-host>:<rpc-port>"
+RPC8 = "http://<rpc-user>:<rpc-password>@<rpc-host>:<rpc-port>"
 ```
 
 Test locally:
 
-```
+```sh
 flask run
 ```
 
 By default the test server is located at `http://localhost:5000/`.
 
-### Deployment
+### Deployment via AWS
 
 Amazon AWS deployment requires awscli.
 
-```
+```sh
 zappa init
 ```
 
 Add `certificate_arn` and `domain` settings to `zappa_settings.json`. To deploy the web service:
 
-```
+```sh
 zappa deploy
 zappa certify dev
 ```
 
 To terminate the web service:
 
-```
+```sh
 zappa undeploy
+```
+
+### Deployment via Docker
+
+```sh
+docker run -p 5000:5000 -d \
+    primecoin/mappa \
+        --rpc=http://<rpc-user>:<rpc-password>@<rpc-host>:<rpc-port> \
+        --rpc8=http://<rpc-user>:<rpc-password>@<rpc-host>:<rpc-port>
 ```
