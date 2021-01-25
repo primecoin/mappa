@@ -1,6 +1,8 @@
 from app import jsonrpc
 from flask import current_app as app, request
+from json import dumps
 from struct import pack, unpack
+from sys import stderr
 from .client import requestJsonRPC
 
 @jsonrpc.method('getdifficulty()')
@@ -26,8 +28,8 @@ def getWork(data = None):
             (version, prev, merkle, epoch, bits, nonce) = unpack('<I32s32s3I', header)
             mined = (1 << 48) * 999 // (bits * bits) + 1
             txResponse = requestJsonRPC(app.config["RPC"], "sendtoaddress", [minerAddress, mined])
-            import json
-            print(f'Send {mined} coin to {minerAddress}: {json.dumps(txResponse, indent=4)}')
+            if "error" in txResponse and txResponse["error"] is not None:
+                raise ValueError(txResponse["error"])
         return response["result"]
 
 @jsonrpc.method('getblocktemplate(capabilities=dict)')
