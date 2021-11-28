@@ -30,6 +30,7 @@ def getWork(data = None):
             txResponse = requestJsonRPC(app.config["RPC"], "sendtoaddress", [minerAddress, mined])
             if "error" in txResponse and txResponse["error"] is not None:
                 raise ValueError(txResponse["error"])
+        response["result"]["original"] = response
         return response["result"]
 
 @jsonrpc.method('getblocktemplate(capabilities=dict)')
@@ -46,4 +47,5 @@ def submitBlock(hexData, options = {}):
     if "error" in response and response["error"] != None:
         raise ValueError(response["error"])
     else:
+        response["result"]["original"] = response
         return response["result"]
