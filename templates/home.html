@@ -59,7 +59,7 @@ $(document).ready(function () {
     if (data && data.result) {
       // Format like uptime: "10:15:39 up 2 days, 1:51, 1 user, availability: 8h: 7.81h (100%), 1d: 22.18h (100%), 1w: 151.92h (100%), 1y: 8744.69h (100%)"
       var availabilityStr = data.result.map(function(item) {
-        return item.period + ': ' + item.actual_hours + 'h (' + item.availability + '%)';
+        return item.period + ': ' + item.availability + '% (' + item.actual_hours + 'h)';
       }).join(', ');
 
       $('#availability-data').html('<div>' + availabilityStr + '</div>');

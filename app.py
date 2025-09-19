@@ -132,6 +132,8 @@ def getAvailability():
             {"name": "8h", "hours": 8, "blocks": 480},      # 8 hours = 480 blocks
             {"name": "1d", "hours": 24, "blocks": 1440},    # 1 day = 1440 blocks
             {"name": "1w", "hours": 168, "blocks": 10080},  # 1 week = 10080 blocks
+            {"name": "1m", "hours": 720, "blocks": 43200},  # 1 month = 43200 blocks
+            {"name": "1q", "hours": 2160, "blocks": 129600}, # 1 quarter = 129600 blocks
             {"name": "1y", "hours": 8760, "blocks": 525600} # 1 year = 525600 blocks
         ]
 
