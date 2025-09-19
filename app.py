@@ -117,6 +117,63 @@ def getBlockchainInfo():
     response = requestJsonRPC(app.config["RPC"], "getblockchaininfo", [])
     return jsonify(response), 200
 
+@app.route('/api/availability/')
+def getAvailability():
+    try:
+        # Get current blockchain information
+        blockchain_response = requestJsonRPC(app.config["RPC"], "getblockchaininfo", [])
+        if "error" in blockchain_response and blockchain_response["error"] != None:
+            return jsonify(blockchain_response), 200
+
+        current_height = blockchain_response["result"]["headers"]
+
+        # Define time periods and corresponding block counts
+        periods = [
+            {"name": "8h", "hours": 8, "blocks": 480},      # 8 hours = 480 blocks
+            {"name": "1d", "hours": 24, "blocks": 1440},    # 1 day = 1440 blocks
+            {"name": "1w", "hours": 168, "blocks": 10080},  # 1 week = 10080 blocks
+            {"name": "1y", "hours": 8760, "blocks": 525600} # 1 year = 525600 blocks
+        ]
+
+        # Get current block information to get current time
+        current_block_response = requestBlock(str(current_height))
+        if "error" in current_block_response and current_block_response["error"] != None:
+            return jsonify(current_block_response), 200
+
+        current_time = current_block_response["result"]["time"]
+        results = []
+
+        for period in periods:
+            # Calculate target height for this period
+            target_height = current_height - period["blocks"]
+
+            # Get block information from the target height
+            past_block_response = requestBlock(str(target_height))
+            if "error" in past_block_response and past_block_response["error"] != None:
+                continue
+
+            past_time = past_block_response["result"]["time"]
+
+            # Calculate actual hours elapsed
+            actual_hours = (current_time - past_time) / 3600
+
+            # Calculate health percentage
+            if actual_hours <= period["hours"]:
+                availability = 100.0
+            else:
+                availability = (period["hours"] / actual_hours) * 100
+
+            results.append({
+                "period": period["name"],
+                "actual_hours": round(actual_hours, 2),
+                "availability": round(availability, 2)
+            })
+
+        return jsonify({"result": results}), 200
+
+    except Exception as e:
+        return jsonify({"error": {"message": str(e)}}), 500
+
 @app.route('/api/getpeerinfo/')
 def getPeerInfo():
     response = requestJsonRPC(app.config["RPC"], "getpeerinfo", [])
