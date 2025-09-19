@@ -121,53 +121,50 @@ def getBlockchainInfo():
 def getAvailability():
     try:
         # Get current blockchain information
-        blockchain_response = requestJsonRPC(app.config["RPC"], "getblockchaininfo", [])
-        if "error" in blockchain_response and blockchain_response["error"] != None:
-            return jsonify(blockchain_response), 200
+        blockchainResponse = requestJsonRPC(app.config["RPC"], "getblockchaininfo", [])
+        if "error" in blockchainResponse and blockchainResponse["error"] != None:
+            return jsonify(blockchainResponse), 200
 
-        current_height = blockchain_response["result"]["headers"]
+        headerTime = blockchainResponse["result"]["headers"]
 
         # Define time periods and corresponding block counts
         periods = [
-            {"name": "8h", "hours": 8, "blocks": 480},      # 8 hours = 480 blocks
-            {"name": "1d", "hours": 24, "blocks": 1440},    # 1 day = 1440 blocks
-            {"name": "1w", "hours": 168, "blocks": 10080},  # 1 week = 10080 blocks
-            {"name": "1m", "hours": 720, "blocks": 43200},  # 1 month = 43200 blocks
+            {"name": "8h", "hours": 8, "blocks": 480},       # 8 hours = 480 blocks
+            {"name": "1d", "hours": 24, "blocks": 1440},     # 1 day = 1440 blocks
+            {"name": "1w", "hours": 168, "blocks": 10080},   # 1 week = 10080 blocks
+            {"name": "1m", "hours": 720, "blocks": 43200},   # 1 month = 43200 blocks
             {"name": "1q", "hours": 2160, "blocks": 129600}, # 1 quarter = 129600 blocks
-            {"name": "1y", "hours": 8760, "blocks": 525600} # 1 year = 525600 blocks
+            {"name": "1y", "hours": 8760, "blocks": 525600}  # 1 year = 525600 blocks
         ]
 
-        # Get current block information to get current time
-        current_block_response = requestBlock(str(current_height))
-        if "error" in current_block_response and current_block_response["error"] != None:
-            return jsonify(current_block_response), 200
-
-        current_time = current_block_response["result"]["time"]
+        # Get current UTC time
+        import time
+        currentTime = int(time.time())
         results = []
 
         for period in periods:
             # Calculate target height for this period
-            target_height = current_height - period["blocks"]
+            targetHeight = headerTime - period["blocks"]
 
             # Get block information from the target height
-            past_block_response = requestBlock(str(target_height))
-            if "error" in past_block_response and past_block_response["error"] != None:
+            pastBlockResponse = requestBlock(str(targetHeight))
+            if "error" in pastBlockResponse and pastBlockResponse["error"] != None:
                 continue
 
-            past_time = past_block_response["result"]["time"]
+            pastTime = pastBlockResponse["result"]["time"]
 
             # Calculate actual hours elapsed
-            actual_hours = (current_time - past_time) / 3600
+            actualHours = (currentTime - pastTime) / 3600
 
             # Calculate health percentage
-            if actual_hours <= period["hours"]:
+            if actualHours <= period["hours"]:
                 availability = 100.0
             else:
-                availability = (period["hours"] / actual_hours) * 100
+                availability = (period["hours"] / actualHours) * 100
 
             results.append({
                 "period": period["name"],
-                "actual_hours": round(actual_hours, 2),
+                "actualHours": round(actualHours, 2),
                 "availability": round(availability, 2)
             })
 

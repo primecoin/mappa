@@ -57,9 +57,9 @@ $(document).ready(function () {
   $.getJSON('/api/availability/', function (data) {
     console.log('Availability data:', data);
     if (data && data.result) {
-      // Format like uptime: "10:15:39 up 2 days, 1:51, 1 user, availability: 8h: 7.81h (100%), 1d: 22.18h (100%), 1w: 151.92h (100%), 1y: 8744.69h (100%)"
+      // Format like uptime: "10:15:39 up 2 days, 1:51, 1 user, availability: 8h: 100% (7.81h), 1d: 100% (22.18h), 1w: 100% (151.92h), 1m: 100% (xxxh), 1q: 100% (xxxh), 1y: 100% (8744.69h)"
       var availabilityStr = data.result.map(function(item) {
-        return item.period + ': ' + item.availability + '% (' + item.actual_hours + 'h)';
+        return item.period + ': ' + item.availability + '% (' + item.actualHours + 'h)';
       }).join(', ');
 
       $('#availability-data').html('<div>' + availabilityStr + '</div>');
