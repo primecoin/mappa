@@ -6,6 +6,8 @@
 <div id="blockchain-data"></div>
 <div>development server node: rpc16.primecoin.org</div>
 <div id="blockchain-data-dev"></div>
+<div>availability:</div>
+<div id="availability-data"></div>
 <div id="peer-data"></div>
 <script>
 $(document).ready(function () {
@@ -50,6 +52,22 @@ $(document).ready(function () {
         {'<>':'div','html':'peer @${synced_blocks} version ${version}${subver}</a>'} ] };
 
     $('#peer-data').json2html(data["result"], transform);
+  });
+
+  $.getJSON('/api/availability/', function (data) {
+    console.log('Availability data:', data);
+    if (data && data.result) {
+      // Format like uptime: "10:15:39 up 2 days, 1:51, 1 user, availability: 8h: 100% (7.81h), 1d: 100% (22.18h), 1w: 100% (151.92h), 1m: 100% (xxxh), 1q: 100% (xxxh), 1y: 100% (8744.69h)"
+      var availabilityStr = data.result.map(function(item) {
+        return item.period + ': ' + item.availability + '% (' + item.actualHours + 'h)';
+      }).join(', ');
+
+      $('#availability-data').html('<div>' + availabilityStr + '</div>');
+    } else {
+      $('#availability-data').html('<div>Error loading availability data</div>');
+    }
+  }).fail(function() {
+    $('#availability-data').html('<div>Failed to load availability data</div>');
   });
 
 });
